@@ -55,24 +55,12 @@
     display: block;
   }
 
-  /* ── Mobile portrait: scale data animation to fill width ── */
-  @media (max-width: 768px) and (orientation: portrait) {
+  /* ── Mobile: shrink to 70% viewport height, fill width, slice crops excess ── */
+  @media (max-width: 768px) {
     #data-layer {
-      align-items: flex-start;
+      height: 70dvh;
+      top: 15dvh; /* centre vertically: (100 - 70) / 2 */
     }
-    #data-lottie {
-      width: 100vw;
-      /* Lock to 3:2 ratio so the animation isn't squashed */
-      height: calc(100vw * 1280 / 1920);
-      /* Vertically centre the fixed-ratio box inside the viewport */
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-  }
-
-  /* ── Tablet landscape / small desktop: safe padding ── */
-  @media (max-width: 1024px) and (orientation: landscape) {
     #data-lottie {
       width: 100%;
       height: 100%;
