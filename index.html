@@ -16,7 +16,7 @@
   /* ── MOVE: scroll-driven, transparent, screen-blended ── */
   #scroll-wrapper {
     position: relative; z-index: 1;
-    height: 900vh; width: 100%;
+    height: 3500vh; width: 100%;
     pointer-events: none;
   }
   #sticky-stage {
@@ -83,6 +83,38 @@
     0%, 100% { transform: translateY(0);   }
     50%       { transform: translateY(7px); }
   }
+  /* ── PHOTOS: scroll-driven multi-directional slides ── */
+  #rect-layer {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100dvh;
+    z-index: 2; pointer-events: none;
+  }
+  #photo-layer {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100dvh;
+    z-index: 3; pointer-events: none;
+    overflow: hidden;
+    perspective: 1400px;          /* enables 3-D card tilt */
+    perspective-origin: 50% 50%;
+  }
+  .photo-slide {
+    position: absolute;
+    /* centred; JS transform shifts from there */
+    top: 50%; left: 50%;
+    height: 70dvh;
+    width: auto;
+    max-width: 90vw;
+    object-fit: contain;
+    border-radius: 10px;
+    transform-style: preserve-3d;
+    will-change: transform;
+    visibility: hidden;
+  }
+  @media (max-width: 768px) {
+    .photo-slide { height: 50dvh; max-width: 92vw; }
+    #photo-layer { perspective: 700px; }
+  }
+
 </style>
 </head>
 <body>
@@ -160,8 +192,19 @@
       dataLayer.style.opacity = dataProg > 0 ? '1' : '0';
       if (dataProg > 0) anim2.goToAndStop(dataProg * (anim2.totalFrames - 1), true);
 
-      if (window.scrollY > 40) hint.classList.add('hidden');
-      else                      hint.classList.remove('hidden');
+      // disappear progress: 0 when scroll starts → 1 when data anim ends (760vh)
+      window.__disappearProg = clamp01(easedY / (7.6 * vh));
+
+      // photos
+      if (window.__updatePhotos) window.__updatePhotos(easedY, vh);
+      // red rectangles (under photo layer)
+      if (window.__updateRects) window.__updateRects(easedY, vh);
+
+      if (!hint) hint = document.getElementById('scroll-hint');
+      if (hint) {
+        if (window.scrollY > 40) hint.classList.add('hidden');
+        else                      hint.classList.remove('hidden');
+      }
     }
 
     anim.addEventListener('DOMLoaded', tick);
@@ -171,6 +214,8 @@
 
   </div><!-- /sticky-stage -->
 </div><!-- /scroll-wrapper -->
+
+<div id="photo-layer"></div>
 
 <div id="scroll-hint">
   Scroll to play
@@ -232,6 +277,8 @@ function buildRects() {
       fSpeedR: rand(10, 20),
       // smooth blend factor (0 = calm, 1 = frenzy)
       blend: 0,
+      // random threshold at which this rect disappears (0=earliest, 1=latest)
+      disappearAt: rand(0, 1),
     });
   }
 }
@@ -266,6 +313,12 @@ function draw(ts) {
 
   for (const r of rects) {
     // Distance from rect base position to cursor
+    // Fade-out driven by scroll disappear progress
+    const dp = window.__disappearProg || 0;
+    const fadeW = 0.04; // fade over 4% of total progress
+    const alpha = Math.max(0, Math.min(1, (r.disappearAt - dp) / fadeW));
+    if (alpha <= 0) continue;
+
     const dx = r.bx - mouse.x;
     const dy = r.by - mouse.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -300,6 +353,7 @@ function draw(ts) {
     const fillColor = `rgb(${ri},${gi},${bi2})`;
 
     wCtx.save();
+    wCtx.globalAlpha = alpha;
     wCtx.translate(cx, cy);
     wCtx.rotate(angle);
 
@@ -320,5 +374,347 @@ requestAnimationFrame(draw);
 })();
 </script>
 
+<script>
+(function() {
+  const PHOTO_URLS = [
+  'photos_web/p000.png',
+  'photos_web/p001.png',
+  'photos_web/p002.png',
+  'photos_web/p003.png',
+  'photos_web/p004.png',
+  'photos_web/p005.png',
+  'photos_web/p006.png',
+  'photos_web/p007.png',
+  'photos_web/p008.png',
+  'photos_web/p009.png',
+  'photos_web/p010.png',
+  'photos_web/p011.png',
+  'photos_web/p012.png',
+  'photos_web/p013.png',
+  'photos_web/p014.png',
+  'photos_web/p015.png',
+  'photos_web/p016.png',
+  'photos_web/p017.png',
+  'photos_web/p018.png',
+  'photos_web/p019.png',
+  'photos_web/p020.png',
+  'photos_web/p021.png',
+  'photos_web/p022.png',
+  'photos_web/p023.png',
+  'photos_web/p024.png',
+  'photos_web/p025.png',
+  'photos_web/p026.png',
+  'photos_web/p027.png',
+  'photos_web/p028.png',
+  'photos_web/p029.png',
+  'photos_web/p030.png',
+  'photos_web/p031.png',
+  'photos_web/p032.png',
+  'photos_web/p033.png',
+  'photos_web/p034.png',
+  'photos_web/p035.png',
+  'photos_web/p036.png',
+  'photos_web/p037.png',
+  'photos_web/p038.png',
+  'photos_web/p039.png',
+  'photos_web/p040.png',
+  'photos_web/p041.png',
+  'photos_web/p042.png',
+  'photos_web/p043.png',
+  'photos_web/p044.png',
+  'photos_web/p045.png',
+  'photos_web/p046.png',
+  'photos_web/p047.png',
+  'photos_web/p048.png',
+  'photos_web/p049.png',
+  'photos_web/p050.png',
+  'photos_web/p051.png',
+  'photos_web/p052.png',
+  'photos_web/p053.png',
+  'photos_web/p054.png',
+  'photos_web/p055.png',
+  'photos_web/p056.png',
+  'photos_web/p057.png',
+  'photos_web/p058.png',
+  'photos_web/p059.png',
+  'photos_web/p060.png',
+  'photos_web/p061.png',
+  'photos_web/p062.png',
+  'photos_web/p063.png',
+  'photos_web/p064.png',
+  'photos_web/p065.png',
+  'photos_web/p066.png',
+  'photos_web/p067.png',
+  'photos_web/p068.png',
+  'photos_web/p069.png',
+  'photos_web/p070.png',
+  'photos_web/p071.png',
+  'photos_web/p072.png',
+  'photos_web/p073.png',
+  'photos_web/p074.png',
+  'photos_web/p075.png',
+  'photos_web/p076.png',
+  'photos_web/p077.png',
+  'photos_web/p078.png',
+  'photos_web/p079.png',
+  'photos_web/p080.png',
+  'photos_web/p081.png',
+  'photos_web/p082.png',
+  'photos_web/p083.png',
+  'photos_web/p084.png',
+  'photos_web/p085.png',
+  'photos_web/p086.png',
+  'photos_web/p087.png',
+  'photos_web/p088.png',
+  'photos_web/p089.png',
+  'photos_web/p090.png',
+  'photos_web/p091.png',
+  'photos_web/p092.png',
+  'photos_web/p093.png',
+  'photos_web/p094.png',
+  'photos_web/p095.png',
+  'photos_web/p096.png',
+  'photos_web/p097.png',
+  'photos_web/p098.png',
+  'photos_web/p099.png',
+  'photos_web/p100.png',
+  'photos_web/p101.png',
+  'photos_web/p102.png',
+  'photos_web/p103.png',
+  'photos_web/p104.png',
+  'photos_web/p105.png',
+  'photos_web/p106.png',
+  'photos_web/p107.png',
+  'photos_web/p108.jpg',
+  'photos_web/p109.jpg',
+  'photos_web/p110.jpg',
+  'photos_web/p111.jpg',
+  'photos_web/p112.jpg',
+  'photos_web/p113.jpg',
+  'photos_web/p114.jpg',
+  'photos_web/p115.jpg',
+  'photos_web/p116.jpg',
+  'photos_web/p117.jpg',
+  'photos_web/p118.jpg',
+  'photos_web/p119.jpg',
+  'photos_web/p120.png',
+  'photos_web/p121.png',
+  'photos_web/p122.png',
+  'photos_web/p123.png',
+  'photos_web/p124.png',
+  'photos_web/p125.png',
+  'photos_web/p126.png',
+  'photos_web/p127.png',
+  'photos_web/p128.png',
+  'photos_web/p129.png',
+  'photos_web/p130.png',
+  'photos_web/p131.png',
+  'photos_web/p132.png',
+  'photos_web/p133.png',
+  'photos_web/p134.png',
+  'photos_web/p135.png',
+  'photos_web/p136.png',
+  'photos_web/p137.png',
+  'photos_web/p138.png',
+  'photos_web/p139.png',
+  'photos_web/p140.png',
+  'photos_web/p141.png',
+  'photos_web/p142.png',
+  'photos_web/p143.png',
+  'photos_web/p144.png',
+  'photos_web/p145.png',
+  'photos_web/p146.png',
+  'photos_web/p147.png',
+  'photos_web/p148.png',
+  'photos_web/p149.png',
+  'photos_web/p150.png',
+  'photos_web/p151.png',
+  'photos_web/p152.png',
+  'photos_web/p153.png',
+  'photos_web/p154.png',
+  'photos_web/p155.png',
+  'photos_web/p156.png',
+  'photos_web/p157.png',
+  'photos_web/p158.png',
+  'photos_web/p159.png',
+  'photos_web/p160.png',
+  'photos_web/p161.jpg',
+  'photos_web/p162.jpg',
+  'photos_web/p163.jpg',
+  'photos_web/p164.jpg',
+  'photos_web/p165.jpg',
+  'photos_web/p166.jpg',
+  'photos_web/p167.jpg',
+  'photos_web/p168.jpg',
+  'photos_web/p169.jpg',
+  'photos_web/p170.jpg',
+  'photos_web/p171.jpg',
+  'photos_web/p172.jpg'
+];
+
+  // ── Fixed pixel constants (viewport-independent) ──────────────────────────
+  const DUR_PX      = 250;  // px of easedY for a photo's full enter+exit
+  // STAGGER < DUR_PX → slight overlap. At 140px: next photo enters screen edge
+  // just as current is leaving — they hand off without clustering.
+  // (Visibility window with ±55vw = ~208px, so stagger=140 gives ~68px of co-visibility.)
+  const STAGGER_PX  = 120;
+  const PHOTO_START_VH = 6.1; // start when wiggle layer is ~80% done (wiggle ends at 7.6×vh)
+
+  // Direction vectors: [xEnter(vw), yEnter(vh), xExit(vw), yExit(vh), ryEnter(deg), ryExit(deg)]
+  // ±75vw/vh: photos start well off-screen and slide in smoothly (no pop at edge)
+  const DIRS = [
+    { xe:   75, ye:    0, xx:  -75, yx:    0, ryE: -35, ryX:  35 },  // A right→left
+    { xe:    0, ye:  -75, xx:    0, yx:   75, ryE:   0, ryX:   0 },  // B top→bottom
+    { xe:  -75, ye:  -75, xx:   75, yx:   75, ryE:   0, ryX:   0 },  // C top-left→bot-right
+    { xe:  -75, ye:   75, xx:   75, yx:  -75, ryE:   0, ryX:   0 },  // D bot-left→top-right
+  ];
+
+  // Cumulative START offset (px) of photo n within Layer A.
+  const layerACumPx = (function() {
+    const cum = [0];
+    for (let i = 0; i < 9; i++) cum.push(cum[i] + STAGGER_PX);
+    return cum;
+  })();
+
+  // B/C/D use the same stagger
+  const BCD_STAGGER_PX = STAGGER_PX;
+
+  // Each sequence (layer) spans: last photo start + full DUR
+  const LAYER_SPAN_PX = layerACumPx[9] + DUR_PX;
+
+  // Sequences play in order: B starts when A is 80% done, C when B is 80%, D when C is 80%.
+  const LAYER_START_B = LAYER_SPAN_PX * 0.8;
+  const LAYER_START_C = LAYER_START_B + LAYER_SPAN_PX * 0.8;
+  const LAYER_START_D = LAYER_START_C + LAYER_SPAN_PX * 0.8;
+
+  // Group span = exact end of Layer D — seamless back-to-back cycles, no gap.
+  const GROUP_SPAN_PX = LAYER_START_D + LAYER_SPAN_PX;
+
+  // Build <img> elements
+  const layer = document.getElementById('photo-layer');
+  const slides = PHOTO_URLS.map(src => {
+    const el = document.createElement('img');
+    el.className = 'photo-slide';
+    el.src = src;
+    el.draggable = false;
+    layer.appendChild(el);
+    return el;
+  });
+
+  window.__updatePhotos = function(easedY, vh) {
+    const photoStartPx = PHOTO_START_VH * vh;
+
+    for (let i = 0; i < slides.length; i++) {
+      const group      = Math.floor(i / 40);
+      const layerIdx   = Math.floor((i % 40) / 10);
+      const posInLayer = i % 10;
+      const d          = DIRS[layerIdx];
+
+      const gStartPx = photoStartPx + group * GROUP_SPAN_PX;
+      const layerStart = [0, LAYER_START_B, LAYER_START_C, LAYER_START_D][layerIdx];
+      const lOffsetPx = layerIdx === 0
+        ? layerACumPx[posInLayer]
+        : layerStart + posInLayer * BCD_STAGGER_PX;
+      const pStartPx = gStartPx + lOffsetPx;
+
+      const p = (easedY - pStartPx) / DUR_PX;
+
+      if (p <= 0 || p >= 1) { slides[i].style.visibility = 'hidden'; slides[i].style.opacity = '0'; continue; }
+      slides[i].style.visibility = 'visible';
+
+      // Fade in over first 15% and out over last 15% — eliminates pop at entry/exit
+      const fade = 0.15;
+      slides[i].style.opacity = p < fade ? p / fade : p > 1 - fade ? (1 - p) / fade : '1';
+
+      let tx, ty, ry;
+      if (p < 0.5) {
+        const t = p * 2;
+        tx = d.xe * (1 - t);  ty = d.ye * (1 - t);  ry = d.ryE * (1 - t);
+      } else {
+        const t = (p - 0.5) * 2;
+        tx = d.xx * t;         ty = d.yx * t;         ry = d.ryX * t;
+      }
+
+      slides[i].style.transform =
+        `translate(calc(-50% + ${tx}vw), calc(-50% + ${ty}vh)) rotateY(${ry}deg)`;
+    }
+  };
+})();
+</script>
+
+<!-- ── Red rectangle layer (z-index 2, under photo layer) ────────────── -->
+<canvas id="rect-layer"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('rect-layer');
+  const ctx    = canvas.getContext('2d');
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const RW = 400, RH = 60;
+  // Each rect is scroll-driven: position = lerp(entry, exit, p) where p = (easedY - startY) / travel
+  const TRAVEL_PX = 500;   // px of easedY for a rect to cross the viewport
+  const SPAWN_GAP = 120;   // approx px of scroll between spawns (gives ~4 visible at once)
+
+  const rects = [];        // all spawned rects (kept so scrolling back replays them)
+  let nextSpawnY = null;   // easedY threshold for next spawn
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  function spawnRect(atY) {
+    const W = canvas.width, H = canvas.height;
+    const edge = Math.floor(Math.random() * 4); // 0=left→right 1=right→left 2=top→bot 3=bot→top
+    let sx, sy, ex, ey;
+    switch (edge) {
+      case 0: sx = -RW;    sy = rand(0, H); ex = W + RW; ey = rand(0, H); break;
+      case 1: sx = W + RW; sy = rand(0, H); ex = -RW;    ey = rand(0, H); break;
+      case 2: sx = rand(0, W); sy = -RW;    ex = rand(0, W); ey = H + RW; break;
+      case 3: sx = rand(0, W); sy = H + RW; ex = rand(0, W); ey = -RW;    break;
+    }
+    rects.push({
+      startY: atY,
+      travel: TRAVEL_PX * rand(0.8, 1.2),   // slight speed variation
+      sx, sy, ex, ey,
+      a0: rand(0, Math.PI * 2),              // start angle
+      da: rand(-Math.PI * 1.5, Math.PI * 1.5) // total rotation over traversal
+    });
+  }
+
+  window.__updateRects = function(easedY, vh) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const photoStart = 6.1 * vh;
+    if (easedY < photoStart) { nextSpawnY = null; return; }
+
+    // Initialise spawn cursor on first entry
+    if (nextSpawnY === null) nextSpawnY = photoStart;
+
+    // Spawn rects as scroll advances (scroll-forward only)
+    while (easedY >= nextSpawnY) {
+      spawnRect(nextSpawnY);
+      nextSpawnY += rand(SPAWN_GAP * 0.6, SPAWN_GAP * 1.4);
+    }
+
+    // Draw all rects whose scroll window is active
+    for (const r of rects) {
+      const p = (easedY - r.startY) / r.travel;
+      if (p <= 0 || p >= 1) continue;
+      const x = r.sx + p * (r.ex - r.sx);
+      const y = r.sy + p * (r.ey - r.sy);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(r.a0 + p * r.da);
+      ctx.fillStyle   = '#cc0000';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth   = 2;
+      ctx.fillRect(-RW / 2, -RH / 2, RW, RH);
+      ctx.strokeRect(-RW / 2, -RH / 2, RW, RH);
+      ctx.restore();
+    }
+  };
+})();
+</script>
+
 </body>
-</html>
